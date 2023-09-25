@@ -1,10 +1,10 @@
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
-from posts.models import Comment, Group, Post
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 from .serializers import CommentSerializer, GroupSerializer, PostSerializer
+from posts.models import Comment, Group, Post
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -36,7 +36,6 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
     def get_queryset(self):
@@ -44,15 +43,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         queryset = Comment.objects.filter(post=post)
         return queryset
 
+    def get_post(self):
+        return get_object_or_404(Post, id=self.kwargs['post_id'])
+
     def perform_create(self, serializer):
-        post = get_object_or_404(Post, id=self.kwargs['post_id'])
-        serializer.save(post=post, author=self.request.user)
+        serializer.save(post=self.get_post(), author=self.request.user)
 
     def perform_update(self, serializer):
-        post = get_object_or_404(Post, id=self.kwargs['post_id'])
         if serializer.instance.author != self.request.user:
             raise PermissionDenied
-        serializer.save(post=post, author=self.request.user)
+        serializer.save(post=self.get_post(), author=self.request.user)
 
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
