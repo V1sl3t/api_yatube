@@ -38,13 +38,12 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
-    def get_queryset(self):
-        post = self.kwargs['post_id']
-        queryset = Comment.objects.filter(post=post)
-        return queryset
-
     def get_post(self):
         return get_object_or_404(Post, id=self.kwargs['post_id'])
+
+    def get_queryset(self):
+        queryset = Comment.objects.filter(post=self.get_post())
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(post=self.get_post(), author=self.request.user)
